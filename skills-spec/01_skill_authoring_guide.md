@@ -149,7 +149,7 @@ base.RenderJsonSucc(ctx, result)
 
 ## 第二部分：公共章节真相源
 
-> 18 个 SKILL.md 中的**第 0 / 1 / 4 / 5 / 6 步**的公共部分都从下方 §A-§E 抽取。SKILL.md 中通过 `（公共模板见 §A）` 等方式引用，只填充 Skill 特定内容。
+> **18 个**（19 个 Skill 中除 `design-solution` 外——它是上游设计类，不生成代码 / docs、不走 §A-§E 公共步骤）SKILL.md 中的**第 0 / 1 / 4 / 5 / 6 步**的公共部分都从下方 §A-§E 抽取。SKILL.md 中通过 `（公共模板见 §A）` 等方式引用，只填充 Skill 特定内容。
 
 ### §A 公共第 0 步：BUILD_STATUS 与拒绝规则
 

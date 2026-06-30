@@ -106,6 +106,8 @@
 > 此外，[`design-spec/07 §6.2`](../design-spec/07_tail_latency_design.md)（机械闸门下沉 L0）把三条可机械判定的尾延迟 / 运行时违规也下沉为编辑 `.go` 时的 grep 信号——`R-TAIL-RETRY-NOJITTER`（重试退避无 jitter）、`R-TAIL-HEDGE-UNSAFE`（对冲 / 重试包裹非幂等调用）、`R-DEPLOY-GOMAXPROCS`（部署无 GOMAXPROCS 对齐）。它们与族 A 同样是"编辑后机械跑 grep 锚"的形态，挂在族 A 的 PostToolUse 上作为附加 L0 信号（见 §4.1 末），不另立强制族；"预算是否合理 / 优先级是否分层"等语义类违规走选型审查（软提醒）。
 >
 > [`design-spec/08-12 §6.2`](../design-spec/08_messaging_design.md) 同理各自下沉若干可机械判定的违规——`R-MQ-DUAL-WRITE`（写库 + 发 MQ 裸双写）、`R-SCHED-LOCK-NO-TTL`（分布式锁无 TTL）、`R-SCHED-MULTI-REPLICA`（后台协程含全局副作用无认领 / 锁）、`R-EVO-BACKFILL-BIGTXN`（全表回填大事务）、`R-API-BATCH-NOLIMIT`（批量端点无上限）等。同挂族 A PostToolUse 作附加 L0 信号（见 §4.1 末）；"投递语义选对没 / 单例判对没 / 是否该走 expand-contract"等语义类违规走选型审查（软提醒）。
+>
+> [`design-spec/13 §6.2`](../design-spec/13_observability_design.md) 同理下沉 `R-OBS-CONTROL-LOOP-BLIND`（新增控制环构造但无配套 collector —— 控制环黑箱，故障时看不见拐点）。同挂族 A PostToolUse 作附加 L0 信号（见 §4.1 末）；"该不该出面板 / 饱和阈值合不合理"等语义类违规走选型审查（软提醒）。
 
 ### 4.1 Hook 族 A — IO 铁律检查（强制）
 
@@ -153,6 +155,13 @@ PostToolUse 在每次编辑 / 写入 `.go` 后，对改动文件机械跑 IO 铁
 11. grep R-EVO-BACKFILL-BIGTXN 模式（UPDATE/DELETE 无 WHERE 限定 / 无分批游标 → 全表大事务）
 12. grep R-API-BATCH-NOLIMIT 模式（批量入参 slice 直接进查询，缺长度上限校验）
 13. 命中且无行末 // aiweave:allow=R-MQ-* / =R-SCHED-* / =R-EVO-* / =R-API-* 注解 → 打印 🟡 告警（文件:行 + rule-id + "决策见 design-spec/08·10·11·09 §6"）；其中 R-MQ-DUAL-WRITE（裸双写丢事件）、R-SCHED-NO-FENCING（脑裂双主写）属硬违规，高纪律团队可升级为 PreToolUse + exit 1 拦截
+```
+
+附加 L0 grep 信号（下沉自 [`design-spec/13 §6.2`](../design-spec/13_observability_design.md)，同挂编辑 `.go` 的 PostToolUse，可并入 `lens_gate_check.sh`）：
+
+```
+14. grep R-OBS-CONTROL-LOOP-BLIND 模式（新增 worker 池 / 熔断器 / 自适应限制器 / shed 构造，但 collector 注册处无对应项 —— 污点：控制环构造无配套 collector）
+15. 命中且无行末 // aiweave:allow=R-OBS-CONTROL-LOOP-BLIND 注解 → 打印 🟡 告警（文件:行 + rule-id + "控制环须可观测，决策见 design-spec/13 §3.1 / §6"）；属信号级软提醒，"该不该出面板 / 饱和阈值合不合理"走选型审查
 ```
 
 ### 4.2 Hook 族 B — 代码↔文档双向同步（强制）

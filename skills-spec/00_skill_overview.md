@@ -87,6 +87,8 @@ Skill 是放在 `.claude/skills/{name}/SKILL.md` 的 markdown 文件，告诉 AI
 
 6 个审计类 Skill 共同构成"L4 审计层"防御（见 OPERATIONS.md 附录 "6 层防御 × W 工作流对照表"）。`io-review` 与 `performance-review` 维度互补：22/perf 管单次延迟，25/io 管往返次数与并行化。
 
+> **审计是"锚驱动"而非"一视角一 Skill"**：08-13 视角的反模式 grep 锚折叠进既有审计 Skill——`performance-review` 除性能合约（22）外还扫 `R-CAP-*`（12 容量）/ `R-TAIL-*`（07 尾延迟）/ `R-OBS-*`（13 可观测性）。故**新增 design-spec 决策视角默认不新增审计 Skill**（见 §9.1），审计覆盖由 `ai_dev_guide §10` 锚索引 + L0 hook（[`02 §4.1`](02_settings_local_json_spec.md)）兜底。
+
 ---
 
 ## 3. 与"建设模式 / 增量同步模式"的对应
@@ -213,6 +215,8 @@ Skill 是放在 `.claude/skills/{name}/SKILL.md` 的 markdown 文件，告诉 AI
 - 工程出现新的代码层级（如 GraphQL resolver、gRPC handler）
 - 工程出现新的设计视角（如 RPC 客户端、文件存储）
 - 增量同步场景遇到现有 Skill 无法覆盖的特殊改动
+
+> **区分"新代码层级"与"新 design-spec 决策视角"**：新增一个 **design-spec 决策视角**（如第 13 视角可观测性）**默认不新增 Skill**——decision lens 由 `design-solution` 统一执行，其反模式 grep 锚折叠进既有审计 Skill（如 `performance-review` 扫 `R-CAP-*` / `R-TAIL-*` / `R-OBS-*`）+ `ai_dev_guide §10` + L0 hook（`02 §4.1`）。只有出现**新代码层级 / 新研发动作**（要生成新种类代码）时才真正新增创建类 / 审计类 Skill。
 
 ### 9.2 何时修改 Skill
 
