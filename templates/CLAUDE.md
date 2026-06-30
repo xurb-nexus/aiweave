@@ -424,8 +424,11 @@ md 与代码冲突时按规则 7 处理。
 | **全表 `UPDATE`/`DELETE` 一条大事务回填** | 长事务持锁 + 顶爆复制延迟 | keyset 分批小事务 + 限流（design-spec/11 §3.3） | `R-EVO-BACKFILL-BIGTXN` |
 | **原地破坏性 DDL（删列 / 缩窄类型）未先登记废弃** | 新旧版本读写崩 | expand-contract，先停用再物理删（design-spec/11 §3.1） | `R-EVO-INPLACE-BREAKING` |
 | **加副本不下调每副本连接（连接随副本线性爆）** | 下游连接耗尽 → 全局拒绝 | 连接池代理 / 下调每副本连接（design-spec/12 §3.3） | `R-CAP-CONN-EXPLODE` |
+| **开了控制环（池 / 熔断 / 限制 / shed）却无饱和度 / 触发态指标** | 黑箱控制环：故障时看不见拐点 | 控制面 collector 暴露内部状态（design-spec/13 §3.1） | `R-OBS-CONTROL-LOOP-BLIND` |
+| **关键路径延迟只累计计数求均值（无直方图）** | 均值掩盖长尾，看不见 P99 | 延迟直方图分位，对齐尾延迟（design-spec/13 §3.1） | `R-OBS-LATENCY-COUNTER-ONLY` |
+| **暴露了控制环指标却无对应面板格** | 盲采：采了不看 = 没采 | 服务标准面板补格（observability_dashboard.md，design-spec/13） | `R-OBS-DASH-MISSING` |
 
-> 上表 08-12 视角的 rule-id 为摘要；各视角完整反模式速查 + grep 锚见对应 `design-spec/0X §6`，本工程的完整 rule-id 索引见 `docs/architecture/ai_dev_guide.md §10`。
+> 上表 08-13 视角的 rule-id 为摘要；各视角完整反模式速查 + grep 锚见对应 `design-spec/0X §6`，本工程的完整 rule-id 索引见 `docs/architecture/ai_dev_guide.md §10`。
 
 ### 范围判定表
 

@@ -363,7 +363,17 @@
 | `R-SEC-ID-PLAINTEXT` | 响应直接返回未加密的真实主键 / 内部 ID | 出口 / assembler 把 `Id` / `KeyNo` / 主键字段直接赋值返回、未经 `Encrypt` | 已确定性加密（`keycrypto.Encrypt`）/ 非 ID 字段 | 🟡 |
 | `R-SEC-DECRYPT-ORACLE` | 对外 ID 解密失败返差异化错误 / 4xx / 携带失败细节（响应差分预言机） | 解密失败分支返回专用错误码 / 4xx / "解密失败"文案，而非统一"查无结果" | 统一返回查无结果（status_codes §6.5 / docs-spec/14 §9.5） | 🟡 |
 
-### 10.12 规则维护
+### 10.12 可观测性类（由 `performance-review` / `observability-review` 触发）
+
+| Rule-id | 含义 | grep 锚（参考） | 误报排除 | 状态 |
+|---------|------|---------------|---------|------|
+| `R-OBS-CONTROL-LOOP-BLIND` | 开了控制环（worker 池 / 熔断器 / 自适应限制 / shed）却无对应饱和度 / 触发态 collector | 新增 `{池构造}` / `{熔断器构造}` / `{限制器构造}` 但 collector 注册处无对应项 | 控制环已注册对应 collector（observability §6.4） | 🟡 |
+| `R-OBS-LATENCY-COUNTER-ONLY` | 关键路径延迟只有累计耗时 Counter、无延迟 Histogram（看不见分位） | 热路径延迟埋点用 `Counter` 累加耗时、无 `Histogram` / `Observe` | 已用 Histogram 分位（observability §6.1 / §7.3） | 🟡 |
+| `R-OBS-DASH-MISSING` | 暴露了控制环指标却无对应面板格（盲采：采了不看 = 没采） | 选型 / 人工审查：observability §6.4 有指标但 observability_dashboard 无对应面板格 | 面板已补格 | 🟡 |
+
+> 决策真相源见 [`design-spec/13_observability_design.md`](../../../design-spec/13_observability_design.md)（控制环可观测性 / RED·USE·SLO 反推 / 面板）。
+
+### 10.13 规则维护
 
 - 新增 rule-id → 本节新增一行；同步在 `concurrency-review` / `performance-review` / `io-review` Skill 实现 grep 模式
 - 误报率高的规则 → 优化 grep 锚或下调严重级别（🔴 → 🟡）

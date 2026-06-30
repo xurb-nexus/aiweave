@@ -19,7 +19,7 @@
 ## W1：设计先行（基础工作流，所有其他工作流的内核）
 
 ```
-⓪  用 design-spec 十二视角做架构决策 → 技术方案(TRD)（复杂需求强烈推荐，执行器 /design-solution）
+⓪  用 design-spec 十三视角做架构决策 → 技术方案(TRD)（复杂需求强烈推荐，执行器 /design-solution）
         ↓
 ①  写 / 改 md（按 TRD 落地，技术方案文档）
         ↓
@@ -304,7 +304,7 @@ Step 5：发布前必须零差异
 ## 工作流之间的关系
 
 ```
-A0 设计（design-spec 十二视角 / /design-solution → TRD）
+A0 设计（design-spec 十三视角 / /design-solution → TRD）
    │  复杂需求先做架构决策，产出 TRD（决策记录 + 落地索引）；简单 CRUD 可跳过
    ▼
 W1（设计先行）

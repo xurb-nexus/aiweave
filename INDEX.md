@@ -19,7 +19,7 @@
 | `docs-spec/25_io_aggregation` IO 极致与聚合并行 | 🟢 / 🟡 / ⬜ / 🚫 | — | 强烈推荐（三条 IO 铁律） |
 | `docs-spec/26_config_center` 配置中心与凭据加密 | 🟢 / 🟡 / ⬜ / 🚫 | — | 配置上云时启用 |
 | `docs-spec/27_deployment_runtime` 部署与运行时生命周期 | 🟢 / 🟡 / ⬜ / 🚫 | — | 强烈推荐（容器化部署 / 优雅启停 / 探针） |
-| `design-spec/*` 高性能架构方法论（十二视角） | 🟢 / 🟡 / ⬜ | — | 推荐启用（技术方案生成阶段；IO 视角强烈推荐） |
+| `design-spec/*` 高性能架构方法论（十三视角） | 🟢 / 🟡 / ⬜ | — | 推荐启用（技术方案生成阶段；IO 视角强烈推荐） |
 | Hooks 机制（L0 自动化防御，skills-spec/02 §4） | 🟢 / 🟡 / ⬜ | — | 强烈推荐（团队共享 settings.json 强制项） |
 | `templates/docs/architecture/runtime_profile.md` 运行时基线 | 🟢 / ⬜ | — | 涉及人工运行时数据 |
 | `OPERATIONS.md` §11 演进效果度量季度复盘 | 🟢 / ⬜ | — | 需工程实际运行 2 季度建立基线后启用 |
@@ -86,11 +86,11 @@
 
 ## design-spec/ —— 高性能架构方法论（技术方案生成参考）
 
-编号 00-12，AIWeave 的**第三支柱**。与 docs-spec（怎么写下来）、skills-spec（怎么执行）正交：design-spec 回答"面对需求怎么**做出**架构决策"。每个视角是一个决策透镜（识别形态 → 决策树 → 默认选型 → 权衡 → 反模式 → 落到 docs/）。决策真相源在此，硬规则与表示真相源仍在对应 docs-spec（引用不复制，见各篇 §8 边界）。**01-07 是旗舰范本写透的同步请求路径核心，08-12 把方法论扩到异步面（08）/ 契约面（09）/ 多副本协调（10）/ 在线演进（11）/ 容量伸缩（12）四条边。**
+编号 00-13，AIWeave 的**第三支柱**。与 docs-spec（怎么写下来）、skills-spec（怎么执行）正交：design-spec 回答"面对需求怎么**做出**架构决策"。每个视角是一个决策透镜（识别形态 → 决策树 → 默认选型 → 权衡 → 反模式 → 落到 docs/）。决策真相源在此，硬规则与表示真相源仍在对应 docs-spec（引用不复制，见各篇 §8 边界）。**01-07 是旗舰范本写透的同步请求路径核心，08-12 把方法论扩到异步面（08）/ 契约面（09）/ 多副本协调（10）/ 在线演进（11）/ 容量伸缩（12）四条边，13 再补一条横切所有 lens 的观测面（可观测性 / 服务可视化）。**
 
 | 序号 | 规范 | 决策落到 docs/ | 表示真相源 | 说明 |
 |------|------|---------------|-----------|------|
-| 00 | [design-spec/00_design_overview.md](design-spec/00_design_overview.md) | — | — | 设计方法论总纲：第三支柱定位 / 十二视角清单（四组：同步路径 01-07 / 异步 08 / 契约 09 / 多副本+时间轴 10-12）/ 统一 lens 九节骨架 / 双源真相边界 / 技术方案(TRD)产物结构 / 占位符纪律继承 |
+| 00 | [design-spec/00_design_overview.md](design-spec/00_design_overview.md) | — | — | 设计方法论总纲：第三支柱定位 / 十三视角清单（五组：同步路径 01-07 / 异步 08 / 契约 09 / 多副本+时间轴 10-12 / 观测面 13）/ 统一 lens 九节骨架 / 双源真相边界 / 技术方案(TRD)产物结构 / 占位符纪律继承 |
 | 01 | [design-spec/01_io_design.md](design-spec/01_io_design.md) ⭐ | architecture/io_contract.md | [docs-spec/25](docs-spec/25_io_aggregation_spec.md) | **旗舰范本（写透）**：IO 三维度（次数/串并行/往返）+ 读写路径分治 + 读/写两棵决策树 + 三句话默认（批量/并行/单次往返优先）+ 借纪律不借实现（按数据形态重选原语）+ 编排权衡矩阵 + 截止预算逐跳传播 + 扇出失败语义（all-or-nothing vs best-effort）+ 跨请求微批 + 反模式速查（R-IO-*）+ 机械闸门。硬规则（三条铁律 / 聚合器）引用 25 不复制 |
 | 02 | [design-spec/02_data_model_design.md](design-spec/02_data_model_design.md) | schema/database_design.md | [docs-spec/05](docs-spec/05_schema_design_spec.md) | 数据建模决策（写透）：数据访问层范式（私有纯查询+公有缓存编排+成对批量）/ 分库分表决策树（业务域+量级+读写模式 / 逻辑物理表名解耦）/ shard 分组并行 / 批量三段式 / 组装层 map 入参纪律 / 分页（keyset 游标 / 大结果集流式） |
 | 03 | [design-spec/03_concurrency_design.md](design-spec/03_concurrency_design.md) | architecture/concurrency_safety.md | [docs-spec/20](docs-spec/20_concurrency_safety_spec.md) | 并发模型决策（写透）：并发原语选型 / **协程池容量定量（Little 定律，远大于核数）** / 阻塞不变量 / 内联兜底提交器 |
@@ -103,6 +103,7 @@
 | 10 | [design-spec/10_scheduling_coordination_design.md](design-spec/10_scheduling_coordination_design.md) 🆕 | service/scheduled_tasks_design.md | [docs-spec/10](docs-spec/10_scheduled_tasks_spec.md) | **定时任务 / 分布式协调（写透）**：**单例 vs 每副本判定** / 协调原语（原子认领 / 分布式锁 / leader 选举 / 外部调度）/ 幂等可重入调度 / **fencing 防脑裂**。补"单后台协程多副本陷阱"的正确性缺口 |
 | 11 | [design-spec/11_evolution_migration_design.md](design-spec/11_evolution_migration_design.md) 🆕 | 分布落地（schema/database_design.md §8 + mvp_rebuild_path.md §11） | [docs-spec/05](docs-spec/05_schema_design_spec.md) / [19](docs-spec/19_incremental_sync_spec.md) | **演进与在线迁移（写透）**：兼容 vs 破坏判定 / **扩展-收缩（expand-contract）** / 在线 DDL / **限流回填（backfill）** / 双写双读 + 影子比对灰度 / 回滚闸门。零停机时间轴安全变更（无独立 docs-spec，同 07 分布落地） |
 | 12 | [design-spec/12_capacity_scaling_design.md](design-spec/12_capacity_scaling_design.md) 🆕 | 分布落地（performance_contract.md + deployment.md） | [docs-spec/22](docs-spec/22_performance_contract_spec.md) / [27](docs-spec/27_deployment_runtime_spec.md) | **容量规划与弹性伸缩（写透）**：**从 SLA 反推容量** / 余量（排队律 ρ≈0.8 膝盖）/ 资源配比一致性（副本×连接≤下游）/ 伸缩信号选型与防抖 / 有状态 vs 无状态伸缩。把 07 排队律正向用作容量设计输入（无独立 docs-spec，同 07 分布落地） |
+| 13 | [design-spec/13_observability_design.md](design-spec/13_observability_design.md) 🆕 | architecture/observability.md + observability_dashboard.md | [docs-spec/23](docs-spec/23_observability_spec.md) | **可观测性 / 服务可视化（写透）**：**控制环可观测性（开了控制环就能看见饱和 / 触发）** / 请求面 RED · 资源面 USE · 控制面三面 / **SLO 反推指标+告警+面板** / collector 形态选型 / 服务标准面板四行。横切复核 03/06/07/12 控制环是否黑箱（补"唯一有表示无决策的支柱"） |
 
 ## skills-spec/ —— `.claude/skills/` 的规范
 
@@ -134,7 +135,7 @@
 | new-saga-step | [templates/skills/new-saga-step/SKILL.md](templates/skills/new-saga-step/SKILL.md) — 生成 Saga 步骤代码 + 补偿 + 幂等 Key |
 | domain-invariant-check | [templates/skills/domain-invariant-check/SKILL.md](templates/skills/domain-invariant-check/SKILL.md) — 审计代码 ↔ 领域不变量约束一致性 |
 | failure-path-review | [templates/skills/failure-path-review/SKILL.md](templates/skills/failure-path-review/SKILL.md) — 审计失败路径文档 / 测试覆盖完整性 |
-| design-solution | [templates/skills/design-solution/SKILL.md](templates/skills/design-solution/SKILL.md) — **设计类（A0 上游）**：输入需求 → 过 design-spec 十二视角 → 产出技术方案(TRD)，衔接 A1 forward / B1 sync |
+| design-solution | [templates/skills/design-solution/SKILL.md](templates/skills/design-solution/SKILL.md) — **设计类（A0 上游）**：输入需求 → 过 design-spec 十三视角 → 产出技术方案(TRD)，衔接 A1 forward / B1 sync |
 
 ## templates/ —— 可直接复制的骨架
 

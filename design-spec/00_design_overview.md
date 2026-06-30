@@ -1,6 +1,6 @@
 # 00 - 高性能架构方法论总纲
 
-> 规定 `design-spec/` 这一支柱的定位、统一骨架、与 `docs-spec/` 的边界，以及"技术方案生成"如何走完十二大决策视角。
+> 规定 `design-spec/` 这一支柱的定位、统一骨架、与 `docs-spec/` 的边界，以及"技术方案生成"如何走完十三大决策视角。
 >
 > 本支柱回答 `docs-spec/` 不回答的问题：**面对一个需求，怎么"做出"架构决策**——而不是决策定了之后怎么写下来。
 
@@ -69,11 +69,11 @@ PRINCIPLES §1 的第一性目标是"仅凭 docs/ + .claude/skills/ 重建整个
 
 ---
 
-## 3. 十二大决策视角清单（强制）
+## 3. 十三大决策视角清单（强制）
 
 每个视角是一个**决策透镜（lens）**：把需求中的某一类架构问题，从"识别形态"一路推到"推荐选型"。每个视角的**决策真相源**在 `design-spec/0X`，**表示真相源**仍在对应 `docs-spec/NN`（避免双源真相，见 §5）。
 
-> **视角分四组（按它治理的"轴"）**：① **同步请求路径**（01-07，请求进来在本进程内怎么快、怎么不长尾）；② **异步面**（08 消息 / 事件——把工作解耦出请求生命周期）；③ **契约面**（09 API——比 IO 还上游，接口粒度直接决定调用方 N+1）；④ **水平与时间轴**（10 多副本协调 / 11 在线演进 / 12 容量伸缩）。01-07 是旗舰范本写透的核心，08-12 把方法论从"单请求"扩到"异步 + 契约 + 多副本 + 时间轴"四条边。
+> **视角分五组（按它治理的"轴"）**：① **同步请求路径**（01-07，请求进来在本进程内怎么快、怎么不长尾）；② **异步面**（08 消息 / 事件——把工作解耦出请求生命周期）；③ **契约面**（09 API——比 IO 还上游，接口粒度直接决定调用方 N+1）；④ **水平与时间轴**（10 多副本协调 / 11 在线演进 / 12 容量伸缩）；⑤ **观测面**（13 可观测性——横切观测前四组各 lens 开的控制环，把"开了控制环却看不见"补成"开了就能在指标 / 面板上看见饱和与触发"）。01-07 是旗舰范本写透的核心，08-12 把方法论从"单请求"扩到"异步 + 契约 + 多副本 + 时间轴"四条边，13 再补一条横切所有 lens 的"观测面"。
 
 | 视角 | 优化目标 | 决策真相源 | 落到 docs/ | 表示真相源 |
 | --- | --- | --- | --- | --- |
@@ -89,8 +89,9 @@ PRINCIPLES §1 的第一性目标是"仅凭 docs/ + .claude/skills/ 重建整个
 | **定时任务 / 分布式协调** 🆕 | 单例 vs 每副本、leader 选举/分布式锁/原子认领、幂等可重入、fencing 防脑裂 | [`10_scheduling_coordination_design.md`](10_scheduling_coordination_design.md) | `service/scheduled_tasks_design.md` | [`docs-spec/10`](../docs-spec/10_scheduled_tasks_spec.md) |
 | **演进与在线迁移** 🆕 | 扩展-收缩、在线 DDL、限流回填、双写双读灰度切换、回滚闸门 | [`11_evolution_migration_design.md`](11_evolution_migration_design.md) | 分布落地（`schema/database_design.md §8`、`mvp_rebuild_path.md §11`） | [`docs-spec/05`](../docs-spec/05_schema_design_spec.md)、[`docs-spec/19`](../docs-spec/19_incremental_sync_spec.md) |
 | **容量规划与弹性伸缩** 🆕 | 从 SLA 反推容量、余量（ρ≈0.8 膝盖）、资源配比、伸缩信号与防抖 | [`12_capacity_scaling_design.md`](12_capacity_scaling_design.md) | 分布落地（`performance_contract.md`、`deployment.md`） | [`docs-spec/22`](../docs-spec/22_performance_contract_spec.md)、[`docs-spec/27`](../docs-spec/27_deployment_runtime_spec.md) |
+| **可观测性 / 服务可视化** 🆕 | 控制环可观测性（开了控制环就能看见饱和 / 触发）/ 请求面 RED · 资源面 USE · 控制面三面 / SLO 反推指标+告警+面板 | [`13_observability_design.md`](13_observability_design.md) | `architecture/observability.md`、`architecture/observability_dashboard.md` | [`docs-spec/23`](../docs-spec/23_observability_spec.md)（+ 新增 `observability_dashboard.md` 表示骨架） |
 
-> 视角不要求每个需求都全过一遍——由需求形态触发（见各视角 §2 输入信号）。但 IO 视角对"涉及多次数据访问 / 集合处理 / 多依赖编排"的需求**强制过一遍**。**11（演进迁移）/ 12（容量伸缩）无独立 docs-spec，按双源真相分布落地到既有表示真相源**（同 07 模式）。
+> 视角不要求每个需求都全过一遍——由需求形态触发（见各视角 §2 输入信号）。但 IO 视角对"涉及多次数据访问 / 集合处理 / 多依赖编排"的需求**强制过一遍**。**11（演进迁移）/ 12（容量伸缩）无独立 docs-spec，按双源真相分布落地到既有表示真相源**（同 07 模式）。**13（可观测性）的表示真相源是 [`docs-spec/23`](../docs-spec/23_observability_spec.md) + 新增 `observability_dashboard.md`，由"前序 lens 开了控制环"触发——它横切复核前述视角的控制环是否可观测。**
 
 ### 3.1 视角联动（一个需求常同时命中多个，彼此有依赖）
 
@@ -110,6 +111,7 @@ PRINCIPLES §1 的第一性目标是"仅凭 docs/ + .claude/skills/ 重建整个
 | **定时/协调**（10） | 并发（03）+ 事务（04）+ 缓存（05）+ 部署（27） | "单后台协程"在多副本下须单例化（03 §3.1）；SPOP 原子认领消幂等（04 §3.2/§9.3）；缓存巡检/预热错峰（05 §3.7/§3.8）；leader 退出接优雅关闭（27 §5） |
 | **演进/迁移**（11） | 数据建模（02）+ 事务（04）+ IO（01）+ 缓存（05） | 扩展-收缩↔字段演进（02 §3.8 / docs-spec 05 §8）；限流回填走 keyset 分批 + 大写分批（01 §3.5 / 02 §3.6）；迁移期一致性窗口（04 §3.2）；缓存世代式切换（05 §3.7） |
 | **容量/伸缩**（12） | 尾延迟（07）+ 并发（03）+ 稳定性（06）+ 数据建模（02） | 排队律 ρ≈0.8 膝盖留余量（07 §9.6）；池容量 Little 反推（03 §3.2）；连接池基线/配比（06 §9.2）；有状态伸缩↔一致性哈希/分库分表（02 / 05 §3.6） |
+| **可观测性**（13） | 并发（03）+ 稳定性（06）+ 尾延迟（07）+ 容量（12） | 各 lens 开的控制环须可观测：worker 池饱和度（03 §3.2）、熔断态（06 / 12）、自适应限制·shed·对冲·重试态（07 §3）、ρ 膝盖红线（12 / 07 §9.6）一律暴露成饱和度 / 触发态指标并上面板——"开了控制环就必须看得见它饱和 / 触发" |
 
 > **IO（01）是枢纽，但不再是唯一入口**：数据访问类需求先过 IO 视角牵出缓存 / 数据建模 / 并发 / 事务；**异步类需求先过 08（解耦判定）、对外接口先过 09（粒度闸门）、多副本部署先过 10（单例 vs 每副本）、带流量变更先过 11（演进路径）、定容量先过 12（SLA 反推）**。读写路径分治（§2.3）横跨 IO / 缓存 / 事务三视角；**"破坏性变更必须新老并存一个窗口"则横跨 08（消息 schema）/ 09（API 版本）/ 11（数据演进）三视角，是同一条元方法的三处实例**。
 
@@ -177,11 +179,11 @@ PRINCIPLES §1 的第一性目标是"仅凭 docs/ + .claude/skills/ 重建整个
 
 | Skill | 与 design-spec 的关系 |
 | --- | --- |
-| **`/design-solution`**（A0 设计类 · 上游执行器） | 输入需求 → 按十二视角逐个过决策树 → 产出 §6 的技术方案 TRD |
+| **`/design-solution`**（A0 设计类 · 上游执行器） | 输入需求 → 按十三视角逐个过决策树 → 产出 §6 的技术方案 TRD |
 | `/io-review` / `/concurrency-review` / `/performance-review` | 审计代码时，命中反模式可回链到对应 design-spec/0X §6 的选型建议 |
 | `/sync-feature-to-docs`（B1） | 需求迭代触及某视角时，先回看对应 lens 是否需要更新决策结论 |
 
-> `design-spec/` 现有十二视角骨架（01-07 旗舰核心 + 08-12 异步 / 契约 / 多副本 / 时间轴四条边），其唯一执行器为 `/design-solution`（模板见 [`templates/skills/design-solution/SKILL.md`](../templates/skills/design-solution/SKILL.md)，已在 INDEX / OPERATIONS / PRINCIPLES / skills-spec 登记为 A0 设计类 Skill）。后续新增架构维度时，按 §9 维护流程评估是否扩 lens。
+> `design-spec/` 现有十三视角骨架（01-07 旗舰核心 + 08-12 异步 / 契约 / 多副本 / 时间轴四条边 + 13 横切观测面），其唯一执行器为 `/design-solution`（模板见 [`templates/skills/design-solution/SKILL.md`](../templates/skills/design-solution/SKILL.md)，已在 INDEX / OPERATIONS / PRINCIPLES / skills-spec 登记为 A0 设计类 Skill）。后续新增架构维度时，按 §9 维护流程评估是否扩 lens。
 
 ---
 

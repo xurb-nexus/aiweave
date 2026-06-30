@@ -247,6 +247,7 @@ if errors.Is(err, circuitbreaker.ErrNotAllowed) {
 ### 6.3 实时降级率监控
 - Grafana 面板路径：`{Path to dashboard}`
 - 各资源面板独立
+- 熔断器内部状态指标（窗口请求 / 接受数 + 拒绝率，`R-OBS-CONTROL-LOOP-BLIND`）登记见 `observability.md` 控制面指标类别（§6.4）；面板编入 `observability_dashboard.md` 控制环行（决策见 design-spec/13，表示见 docs-spec/23 §6.4）
 ```
 
 ---

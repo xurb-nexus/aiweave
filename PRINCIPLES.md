@@ -19,7 +19,7 @@
 本规范服务两种使用模式，第一性目标在两种模式下都成立。
 
 ### 模式 A：建设模式（一次性事件）
-- A0 — design（上游 / 可选）：用 design-spec 十二视角对需求做架构决策，产出技术方案(TRD)，再喂给 A1 / B1（详见 `design-spec/00`；执行器 `/design-solution`）
+- A0 — design（上游 / 可选）：用 design-spec 十三视角对需求做架构决策，产出技术方案(TRD)，再喂给 A1 / B1（详见 `design-spec/00`；执行器 `/design-solution`）
 - A1 — forward：新工程从零启动，按规范填充 docs/ → 按 Stage 生成代码
 - A2 — rebuild：从已有 docs/ 重建代码（代码丢失/换栈）
 
@@ -215,7 +215,7 @@
 ## 10. 设计先行流程
 
 ```
-⓪  用 design-spec 十二视角做架构决策 → 技术方案(TRD)（可选；复杂需求强烈推荐，执行器 /design-solution）
+⓪  用 design-spec 十三视角做架构决策 → 技术方案(TRD)（可选；复杂需求强烈推荐，执行器 /design-solution）
         ↓
 ①  写 / 改 md（按 TRD 落地，技术方案文档）
         ↓

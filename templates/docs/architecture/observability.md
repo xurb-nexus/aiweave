@@ -15,9 +15,9 @@
 - Tracing 通过 `trace_id` / `request_id` 结构化日志串联，不引入独立 Tracing 组件
 
 ### 1.2 Metrics
-- 真相源：本文档
-- 仅采集 HTTP 统计 / 服务健康 / Go runtime / 连接池状态
-- 严格禁止业务数据 Metric
+- 真相源：本文档；**决策方法论**（该观测什么 / 控制环怎么暴露 / SLO 反推面板）见 [`design-spec/13`](../../../design-spec/13_observability_design.md)
+- 仅采集 HTTP 统计 / 服务健康 / Go runtime / 连接池状态 + **控制面内部状态**（控制环饱和度 / 触发态，见 §2.4）
+- 按 **RED**（请求面）+ **USE**（资源面）+ **控制面**三面组织；严格禁止业务数据 Metric
 
 ---
 
@@ -27,8 +27,8 @@
 
 | Metric 名 | 类型 | Labels | 说明 |
 |----------|------|--------|------|
-| `http_request` | Counter | `url`、`code` | 请求计数 |
-| `http_request_cost` | Counter | `url`、`code` | 请求耗时累计（ms） |
+| `http_request` | Counter | `url`、`code` | 请求量 + 错误率（按 `code`） |
+| `http_request_duration` | **Histogram** | `url`、`method` | 请求延迟分布，桶按 §3.3 SLO，取 P50/P90/P99（**延迟必走 Histogram，不用累计 Counter 求均值**） |
 
 ### 2.2 服务健康状态
 
@@ -41,8 +41,21 @@
 - Go runtime（GC、goroutine、内存）—— 由 `GoCollector` 自动采集
 - 连接池状态（MySQL / Redis active / idle）—— 按需注册 `Collector`
 - 生产持续 profiling（pprof / 火焰图）与运行时指标的联动见 [`performance_contract.md §7.4`](performance_contract.md)：定位"分配 / CPU 去哪了"，闭合离线 bench 之外的在线证据
+- **collector 工程纪律**：即时态用拉取式即读（采集时现读、无后台定时 Set）；框架已注册的（连接池）禁重复注册（panic）；注册在实例初始化之后；仅 HTTP 路径暴露；双 Registry 分离。详见 [`docs-spec/23 §6.3`](../../../docs-spec/23_observability_spec.md)
 
-### 2.4 禁止扩展到业务数据
+### 2.4 控制面 / 饱和度指标（控制环可观测性）
+
+> 凡 design-spec 各 lens 开了**控制环**，其内部状态必须暴露成指标（黑箱 = 故障看不见拐点，`R-OBS-CONTROL-LOOP-BLIND`）。决策见 [`design-spec/13`](../../../design-spec/13_observability_design.md)。
+
+| 控制环（来源 lens） | 指标 | label（有界） | collector 形态 |
+|--------------------|------|--------------|----------------|
+| `{worker-pool}`（并发 Little 池 03） | 运行 / 空闲 / 容量 → 饱和度 | `{pool}` | 拉取式即读 |
+| `{breaker}`（熔断器 06 / 12） | 窗口请求·接受数 + 拒绝率（0~1） | `{breaker}` | 拉取式即读 |
+| `{limiter}`（自适应限制 / shed / 对冲 / 重试 07） | 限额 / 触顶 / 丢弃 / 对冲量 / 预算消耗 | 有界 | 拉取式即读 + 计数器 |
+
+> 饱和阈值见 [`performance_contract.md §6.4`](performance_contract.md)；面板编排见 [`observability_dashboard.md`](observability_dashboard.md)（每指标必有面板格，否则 `R-OBS-DASH-MISSING`）。
+
+### 2.5 禁止扩展到业务数据
 
 | ❌ 反例 Metric | 为什么禁止 | 替代方案 |
 |--------------|----------|---------|
@@ -147,6 +160,8 @@ SLA 数值的真相源在 [`performance_contract.md §1`](performance_contract.m
 | 新增 label 维度 | 检查是否命中 §3.2 禁止清单 |
 | 新增 Histogram / bucket | §3.3 检查 bucket 数 ≤ 15；校验桶边界对齐 SLA 分位（桶按 SLO 设）+ 关键路径 label 带 `status` / `mode` |
 | 新增告警规则 | §5.2 基础告警规则表新增一行 |
+| 新增控制环（池 / 熔断 / 限制器 / shed） | §2.4 控制面指标登记 + 注册 collector + `observability_dashboard.md` 控制环行加格（否则 `R-OBS-CONTROL-LOOP-BLIND` / `R-OBS-DASH-MISSING`） |
+| 新增延迟观测点 | 必为 Histogram（非累计 Counter 均值），§2.1 + §3.3 桶对齐 SLO（否则 `R-OBS-LATENCY-COUNTER-ONLY`） |
 
 ### 7.2 与 BUILD_STATUS §11 约束清单状态轨道的关系
 

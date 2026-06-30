@@ -27,7 +27,7 @@ Skill 是放在 `.claude/skills/{name}/SKILL.md` 的 markdown 文件，告诉 AI
 ```
 ┌─── 设计类（A0 设计阶段 / design-spec 驱动） 1 个 ───────────────────┐
 │                                                                  │
-│  design-solution      输入需求 → 过十二视角 → 产出技术方案(TRD)    │
+│  design-solution      输入需求 → 过十三视角 → 产出技术方案(TRD)    │
 │                       （docs↔代码生命周期最上游；不生成代码/docs）  │
 │                                                                  │
 ├─── 创建类（A 建设模式 / B 增量场景共用） 9 个 ──────────────────────┤
@@ -66,7 +66,7 @@ Skill 是放在 `.claude/skills/{name}/SKILL.md` 的 markdown 文件，告诉 AI
 **为什么分 5 类**：
 
 - **设计** vs **创建** vs **维护** vs **审计** vs **终极**：按"在生命周期的位置"+"是否生成代码"+"是否常态使用"交叉
-- **设计类**（A0 上游）不生成代码、不写 docs/，只把需求过 design-spec 十二视角产出技术方案(TRD)，是后续一切的前置决策——它是 `design-spec/` 支柱的执行器（对应关系见 [`01_skill_authoring_guide.md`](01_skill_authoring_guide.md) §6）
+- **设计类**（A0 上游）不生成代码、不写 docs/，只把需求过 design-spec 十三视角产出技术方案(TRD)，是后续一切的前置决策——它是 `design-spec/` 支柱的执行器（对应关系见 [`01_skill_authoring_guide.md`](01_skill_authoring_guide.md) §6）
 - **创建类**生成新代码（A 模式 + B 模式新增场景）
 - **维护类**不生成代码，只反向同步文档与索引（B 模式日常）
 - **审计类**不生成代码，只检查一致性（B 模式 / 发版前兜底）
@@ -93,7 +93,7 @@ Skill 是放在 `.claude/skills/{name}/SKILL.md` 的 markdown 文件，告诉 AI
 
 | 模式 | 主要 Skill |
 |------|-----------|
-| **A0 design**（技术方案生成 / 上游） | **`/design-solution`**（过 design-spec 十二视角产出 TRD，再进 A1 / B1） |
+| **A0 design**（技术方案生成 / 上游） | **`/design-solution`**（过 design-spec 十三视角产出 TRD，再进 A1 / B1） |
 | **A1 forward**（从零开发） | `/new-*` 系列按 Stage 顺序调用 + `/new-test` |
 | **A2 rebuild**（从 docs 重建） | `/rebuild-from-docs {scope}` 按 Stage 顺序 |
 | **B1 sync-feature**（需求迭代后） | **`/sync-feature-to-docs`** + `/doc-sync-check` |

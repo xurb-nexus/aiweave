@@ -14,6 +14,8 @@
 > 2. Metric 的内存占用上限是多少？怎么防止 cardinality 爆炸？
 > 3. 告警分级 / 触发条件是什么？
 
+> **决策方法论**（面对需求该观测什么 / 控制环怎么暴露 / 把 SLO 反推成指标 + 告警 + 面板）见 [`design-spec/13_observability_design.md`](../design-spec/13_observability_design.md)；**本文档是其表示真相源**——只登记"采集什么 / cardinality / 告警怎么写"，不重复决策。
+
 没有这篇文档：
 - AI 把业务数据当 Metric 采集（如 `{业务实体}_count`），导致 cardinality 爆炸
 - AI 用 user_id / IP / 动态路径作为 label，把 Metric 库内存打爆
@@ -24,6 +26,7 @@
 ## 2. 核心原则（强制）
 
 - **只采集服务级基础指标，不采集业务数据**
+- **"服务级"含控制面内部状态**：不止 HTTP / health / runtime，还含 [`design-spec`](../design-spec/00_design_overview.md) 各 lens 开的**控制环**（worker 池 / 熔断器 / 自适应限制 / load shedding / 对冲 / 重试）的饱和度 / 触发态——见 §6.4。组织框架按 **RED**（请求面：Rate / Errors / Duration）+ **USE**（资源面：Utilization / Saturation / Errors）+ **控制面**三面，决策见 [`design-spec/13`](../design-spec/13_observability_design.md)
 - Tracing 通过结构化日志（`trace_id`/`request_id` 串联）构建，不引入独立 Tracing 组件
 - 严格控制内存：总 cardinality 上限 ≤ 500（**默认**，可在 ai_dev_guide.md 登记理由后突破）
 
@@ -82,9 +85,11 @@
 ```markdown
 | Metric 名 | 类型 | Labels | 说明 |
 |----------|------|--------|------|
-| `http_request` | Counter | `url`、`code` | 请求计数 |
-| `http_request_cost` | Counter | `url`、`code` | 请求耗时累计（ms） |
+| `http_request` | Counter | `url`、`code` | 请求量 + 错误率（按 `code` 聚合） |
+| `http_request_duration` | **Histogram** | `url`、`method` | 请求延迟分布，桶按 §7.3 对齐 SLO 分位，取 P50 / P90 / P99 |
 ```
+
+> **延迟必走 Histogram，不用"累计耗时 Counter ÷ 请求量"求均值**：均值掩盖长尾，与尾延迟 lens（[`design-spec/07`](../design-spec/07_tail_latency_design.md)）对 P99 / P999 的依赖矛盾——`histogram_quantile` 只能作用于 Histogram，对 Counter 求分位无意义（§15.3 告警示例已据此修正）。桶边界按 §7.3 对齐 SLA 分位。决策见 [`design-spec/13`](../design-spec/13_observability_design.md)。
 
 ### 6.2 服务健康状态
 
@@ -102,7 +107,35 @@
 - 生产持续 profiling（pprof / 火焰图）与运行时指标的联动见 [`docs-spec/22 §7.4`](22_performance_contract_spec.md)：定位"分配 / CPU 去哪了"，闭合离线 bench 之外的在线证据
 ```
 
-### 6.4 禁止扩展到业务数据
+**collector 工程纪律（强制）**——决策见 [`design-spec/13 §3.3`](../design-spec/13_observability_design.md)：
+
+```markdown
+- 拉取式即读 vs 后台定时写值：即时态指标（当前运行数 / 限额 / 拒绝率）用拉取式 collector——采集时现读实例状态、无后台定时 Set（省后台协程 + 免竞态）；仅当读状态本身昂贵才退化为后台写值。
+- 去重（防 panic）：框架已自动注册的（如连接池）禁业务侧重复注册，否则触发 `duplicate metrics collector registration` panic；只补框架未覆盖的（如熔断器 / 协程池）。
+- init 时序：collector 注册须在被观测实例初始化之后（依赖已建好的全局实例）。
+- 仅 HTTP 服务路径暴露：cron / job 路径不挂 `/runtime-metrics` 端点。
+- 双 Registry 分离：运行时 + 基础设施一个端点、业务 / HTTP 自定义一个端点，便于按需采集。
+```
+
+### 6.4 控制面 / 饱和度指标（控制环可观测性，强制）
+
+> **决策真相源**在 [`design-spec/13`](../design-spec/13_observability_design.md)（该不该观测、暴露哪些控制环、RED·USE·SLO 反推）；本节是其**表示真相源**——登记"哪些控制环 → 哪些指标 → 什么 collector 形态"。
+
+凡 [`design-spec`](../design-spec/00_design_overview.md) 各 lens 开了**控制环**，其内部状态必须暴露成指标（黑箱控制环 = 故障时看不见拐点，`R-OBS-CONTROL-LOOP-BLIND`）：
+
+```markdown
+| 控制环（来源 lens） | 指标 | label（有界） | collector 形态 |
+|--------------------|------|--------------|----------------|
+| worker 池（design-spec/03 Little） | 运行 / 空闲 / 容量 → 饱和度 | `{pool}` | 拉取式即读 |
+| 熔断器（design-spec/06 / docs-spec/12） | 窗口请求·接受数 + 拒绝率（0~1） | `{breaker}` | 拉取式即读 |
+| 自适应并发限制（design-spec/07 §3.3） | 当前限额 + 触顶计数 | — | 拉取式即读 + 计数器 |
+| load shedding（design-spec/07 §3.4） | 丢弃计数（按优先级 / 原因） | `{priority}` / `{reason}` | 计数器 |
+| 对冲 / 重试预算（design-spec/07 §3.2 / §3.5） | 对冲量 + 命中率 / 预算消耗率 | — | 计数器 |
+```
+
+> 饱和阈值真相源在 [`performance_contract.md §6.4`](performance_contract.md)（[`docs-spec/22`](22_performance_contract_spec.md)）；面板编排见 `observability_dashboard.md`（每个控制环指标必有对应面板格，否则 `R-OBS-DASH-MISSING`）。collector 形态见 §6.3。
+
+### 6.5 禁止扩展到业务数据
 
 ```markdown
 | ❌ 反例 Metric | 为什么禁止 | 替代方案 |
@@ -230,6 +263,9 @@ service 方法伪码涉及发出指标的步骤必须使用 `[METRIC-EMIT: name{
 - 禁止使用无界值作为 label（`{actor-id}` / IP / `request_id` / 动态路径）
 - url label 必须使用路由模板，不可使用实际请求 URL
 - 新增 Metric 必须出现在 §2 对应子表
+- **新增控制环（worker 池 / 熔断器 / 自适应限制器 / shed）→ 必注册对应 collector** 暴露饱和度 / 触发态并登记 §6.4，否则 `R-OBS-CONTROL-LOOP-BLIND`
+- **新增延迟观测点 → 必用 Histogram**（桶对齐 §7.3 SLO），禁用"累计耗时 Counter ÷ 请求量"求均值冒充分位，否则 `R-OBS-LATENCY-COUNTER-ONLY`
+- **每个控制环指标必有对应面板格**（`observability_dashboard.md`），否则 `R-OBS-DASH-MISSING`
 ```
 
 ---
@@ -245,6 +281,8 @@ service 方法伪码涉及发出指标的步骤必须使用 `[METRIC-EMIT: name{
 | 新增 Histogram / bucket | §3.3 检查 bucket 数 ≤ 15；校验桶边界对齐 SLA 分位（桶按 SLO 设）；校验关键路径 histogram label 带 `status` / `mode` 且为有界枚举 |
 | 新增告警规则（YAML / Grafana） | §5.2 基础告警规则表新增一行 |
 | 修改 Metric 命名 | §4 命名约定校对 |
+| 新增控制环 collector（worker 池 / 熔断器 / 自适应限制器 / shed 的 `NewDesc` / `Collector`） | §6.4 控制面指标登记一行 + `observability_dashboard.md` 控制环行加面板格 + 饱和阈值登记 `performance_contract.md §6.4`；缺 collector → `R-OBS-CONTROL-LOOP-BLIND` |
+| 新增延迟观测点 | 必为 Histogram（非累计 Counter），§6.1 登记 + §7.3 桶对齐 SLO；违反 → `R-OBS-LATENCY-COUNTER-ONLY` |
 
 ### 12.2 维护触发
 
@@ -306,7 +344,7 @@ prometheus.NewCounterVec(opts, []string{"module", "result"})
 |--------|------|---------|------|
 | 服务不健康 | `health{module="auth"} == 0` | 1 min | P0 |
 | 鉴权错误率突增 | `rate(http_request{url="/api/internal/auth/verify",code=~"5.."}[1m]) > 0.05` | 2 min | P1 |
-| 鉴权延迟劣化 | `histogram_quantile(0.99, http_request_cost) > 100` | 3 min | P1 |
+| 鉴权延迟劣化 | `histogram_quantile(0.99, rate(http_request_duration_bucket{url="/api/internal/auth/verify"}[5m])) > 100` | 3 min | P1 |
 
 
 ---

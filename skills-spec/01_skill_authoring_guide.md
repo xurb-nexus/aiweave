@@ -132,7 +132,7 @@ base.RenderJsonSucc(ctx, result)
 | io-review | docs-spec/25_io_aggregation_spec.md |
 | domain-invariant-check | docs-spec/09_service_design_spec.md §7 |
 | failure-path-review | docs-spec/21_distributed_transaction_spec.md §6 + 24_cross_service_contract_spec.md §4 |
-| design-solution | design-spec/00_design_overview.md + 01..12（十二视角决策方法论，唯一对应 design-spec 而非 docs-spec 的 Skill） |
+| design-solution | design-spec/00_design_overview.md + 01..13（十三视角决策方法论，唯一对应 design-spec 而非 docs-spec 的 Skill） |
 
 ### 7. 不允许的写法
 
@@ -296,7 +296,7 @@ cd test && go test ./cases/{relevant}/...
 | io-review | 审计代码 ↔ IO 铁律一致性 | `/io-review [scope]` | architecture/io_contract.md |
 | domain-invariant-check | 审计代码 ↔ 领域不变量一致性 | `/domain-invariant-check [scope]` | service/{module}_service.md §7 |
 | failure-path-review | 审计失败路径文档 / 测试覆盖完整性 | `/failure-path-review [scope]` | service/transaction_design.md §6 |
-| design-solution | 技术方案生成：过 design-spec 十二视角产出 TRD（不生成代码） | `/design-solution {需求}` | design-spec/00..12 |
+| design-solution | 技术方案生成：过 design-spec 十三视角产出 TRD（不生成代码） | `/design-solution {需求}` | design-spec/00..13 |
 
 
 ---
